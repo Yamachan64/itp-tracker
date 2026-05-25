@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IT学習">
+<meta name="theme-color" content="#0F6E56">
+<title>ITパスポート 学習トラッカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #E1F5EE;
+    --green-text: #085041;
+    --amber: #EF9F27;
+    --coral: #D85A30;
+    --bg: #F7F7F5;
+    --card: #FFFFFF;
+    --text: #1a1a18;
+    --muted: #6B6B67;
+    --border: rgba(0,0,0,0.09);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* ヘッダー */
+  .header {
+    background: var(--green-dark);
+    color: #fff;
+    padding: 52px 20px 20px;
+    padding-top: calc(52px + env(safe-area-inset-top, 0px));
+  }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .header p { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+  .exam-pill {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  /* 進捗バー */
+  .prog-section { background: var(--green-dark); padding: 12px 20px 20px; }
+  .prog-meta { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.75); margin-bottom: 6px; }
+  .prog-track { background: rgba(255,255,255,0.2); border-radius: 999px; height: 6px; overflow: hidden; }
+  .prog-fill { height: 100%; background: #fff; border-radius: 999px; transition: width 0.4s ease; }
+
+  /* スタットカード */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 16px 0; }
+  .stat-card { background: var(--card); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .stat-card .lbl { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .stat-card .val { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
+  .stat-card .unit { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* セクション */
+  .section { padding: 16px 16px 0; }
+  .sec-title { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+
+  /* フェーズ凡例 */
+  .phase-legend { display: flex; gap: 12px; margin-bottom: 10px; }
+  .pl-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+  .pl-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* カレンダー */
+  .cal-card { background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .dow-row { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 4px; }
+  .dow { font-size: 10px; color: var(--muted); text-align: center; padding: 2px 0; }
+  .day-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .db {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    cursor: pointer;
+    min-height: 42px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    transition: transform 0.1s;
+    padding: 2px;
+  }
+  .db:active { transform: scale(0.92); }
+  .db.done { background: var(--green-light); border-color: var(--green); }
+  .db.exam { background: #FAECE7; border-color: var(--coral); cursor: default; }
+  .db:disabled { opacity: 0.3; cursor: default; }
+  .dn { font-size: 11px; font-weight: 500; color: var(--text); }
+  .db.done .dn { color: var(--green-text); }
+  .db.exam .dn { color: var(--coral); }
+  .di { font-size: 13px; }
+  .dp { font-size: 8px; color: var(--muted); }
+  .db.done .dp { color: var(--green); }
+
+  /* 記録フォーム */
+  .form-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .form-row { margin-bottom: 10px; }
+  .form-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block; letter-spacing: 0.05em; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg-btn {
+    padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .seg-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .memo-input {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 12px; font-size: 14px; font-family: inherit; color: var(--text);
+    background: var(--bg); resize: none; min-height: 64px;
+    outline: none;
+  }
+  .memo-input:focus { border-color: var(--green); }
+  .btn-rec {
+    width: 100%; padding: 14px; border-radius: var(--radius);
+    background: var(--green); color: #fff;
+    border: none; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn-rec:active { background: var(--green-dark); }
+
+  /* 履歴 */
+  .hist-card { background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .hist-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 12px 0; }
+  .he {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .he:last-child { border-bottom: none; padding-bottom: 0; }
+  .he-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-top: 4px; flex-shrink: 0; }
+  .he-main { flex: 1; }
+  .he-date { font-size: 10px; color: var(--muted); }
+  .he-tag { font-size: 12px; font-weight: 500; color: var(--text); }
+  .he-memo { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom,0px)); left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: #fff; padding: 10px 20px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>ITパスポート学習</h1>
+      <p>山本 祐規子さんの学習トラッカー</p>
+    </div>
+    <div class="exam-pill">6/27 試験</div>
+  </div>
+</div>
+<div class="prog-section">
+  <div class="prog-meta">
+    <span id="prog-label">0 / 35日達成</span>
+    <span id="prog-pct">0%</span>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="lbl">達成日数</div>
+    <div class="val" id="s-done">0</div>
+    <div class="unit">日</div>
+  </div>
+  <div class="stat-card">
+    <div class="lbl">試験まで</div>
+    <div class="val" id="s-left">35</div>
+    <div class="unit">日</div>
+  </div>
+  <div class="stat-card">
+    <div class="lbl">連続記録</div>
+    <div class="val" id="s-streak">0</div>
+    <div class="unit">日</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">学習カレンダー</div>
+  <div class="phase-legend">
+    <div class="pl-item"><div class="pl-dot" style="background:#1D9E75"></div>達成</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#EF9F27"></div>基礎（〜6/6）</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#185FA5"></div>過去問（〜6/20）</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#D85A30"></div>仕上げ</div>
+  </div>
+  <div class="cal-card">
+    <div class="dow-row">
+      <div class="dow">月</div><div class="dow">火</div><div class="dow">水</div>
+      <div class="dow">木</div><div class="dow">金</div><div class="dow">土</div><div class="dow">日</div>
+    </div>
+    <div class="day-grid" id="daygrid"></div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <div class="sec-title">今日の記録</div>
+  <div class="form-card">
+    <div class="form-row">
+      <span class="form-label">分野</span>
+      <div class="seg" id="seg-field">
+        <button class="seg-btn active" data-v="マネジメント系">マネジメント</button>
+        <button class="seg-btn" data-v="ストラテジ系">ストラテジ</button>
+        <button class="seg-btn" data-v="テクノロジ系">テクノロジ</button>
+        <button class="seg-btn" data-v="総復習">総復習</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <span class="form-label">学習方法</span>
+      <div class="seg" id="seg-type">
+        <button class="seg-btn active" data-v="過去問">過去問</button>
+        <button class="seg-btn" data-v="解き直し">解き直し</button>
+        <button class="seg-btn" data-v="テキスト">テキスト</button>
+        <button class="seg-btn" data-v="動画">動画</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <span class="form-label">メモ（任意）</span>
+      <textarea class="memo-input" id="memo" placeholder="例：プロジェクト管理の用語が難しかった"></textarea>
+    </div>
+    <button class="btn-rec" onclick="rec()">✓ 今日を記録する</button>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <div class="sec-title">最近の記録</div>
+  <div class="hist-card" id="hist"></div>
+</div>
+
+<div class="spacer"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const START = new Date(2026,4,24);
+const END   = new Date(2026,5,27);
+const TODAY = new Date(2026,4,24);
+const KD = 'itp3_done', KL = 'itp3_logs';
+
+function dk(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function ph(d){
+  if(d <= new Date(2026,5,6)) return {label:'基礎',color:'#EF9F27'};
+  if(d <= new Date(2026,5,20)) return {label:'過去問',color:'#185FA5'};
+  return {label:'仕上げ',color:'#D85A30'};
+}
+function ld(){ try{ return JSON.parse(localStorage.getItem(KD)||'{}'); }catch(e){ return {}; } }
+function ll(){ try{ return JSON.parse(localStorage.getItem(KL)||'[]'); }catch(e){ return []; } }
+var dm = ld(), logs = ll();
+
+function build(){
+  const g = document.getElementById('daygrid');
+  const cur = new Date(START);
+  const sd = (START.getDay()+6)%7;
+  for(let i=0;i<sd;i++){ g.appendChild(document.createElement('div')); }
+  while(cur <= END){
+    const d = new Date(cur), key = dk(d);
+    const isEx = d.getTime()===END.getTime();
+    const isFu = d > TODAY;
+    const btn = document.createElement('button');
+    if(isEx){
+      btn.className='db exam'; btn.disabled=true;
+      btn.innerHTML='<span class="dn">27</span><span class="di">🏆</span>';
+    } else {
+      const p = ph(d);
+      const isDone = !!dm[key];
+      btn.className='db'+(isDone?' done':'');
+      if(isFu) btn.disabled=true;
+      btn.innerHTML=`<span class="dn">${d.getDate()}</span><span class="di">${isDone?'✓':'·'}</span><span class="dp" style="color:${isDone?'var(--green)':p.color}">${p.label}</span>`;
+      if(!isFu) btn.onclick=()=>tog(key,btn,d);
+    }
+    g.appendChild(btn);
+    cur.setDate(cur.getDate()+1);
+  }
+}
+
+function tog(key,btn,d){
+  if(dm[key]) delete dm[key]; else dm[key]=true;
+  localStorage.setItem(KD,JSON.stringify(dm));
+  const done=!!dm[key], p=ph(d);
+  btn.className='db'+(done?' done':'');
+  btn.innerHTML=`<span class="dn">${d.getDate()}</span><span class="di">${done?'✓':'·'}</span><span class="dp" style="color:${done?'var(--green)':p.color}">${p.label}</span>`;
+  upd();
+}
+
+function streak(){
+  let s=0, cur=new Date(TODAY);
+  while(true){
+    if(!dm[dk(cur)]) break;
+    s++; cur.setDate(cur.getDate()-1);
+  }
+  return s;
+}
+
+function upd(){
+  const n=Object.keys(dm).length, total=35;
+  const pct=Math.round(n/total*100);
+  const diff=Math.max(0,Math.ceil((END.getTime()-TODAY.getTime())/(864e5)));
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=n+' / '+total+'日達成';
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('s-done').textContent=n;
+  document.getElementById('s-left').textContent=diff;
+  document.getElementById('s-streak').textContent=streak();
+}
+
+function selSeg(groupId, btn){
+  document.querySelectorAll('#'+groupId+' .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+document.querySelectorAll('#seg-field .seg-btn').forEach(b=>b.onclick=()=>selSeg('seg-field',b));
+document.querySelectorAll('#seg-type .seg-btn').forEach(b=>b.onclick=()=>selSeg('seg-type',b));
+
+function rec(){
+  const f=document.querySelector('#seg-field .seg-btn.active').dataset.v;
+  const t=document.querySelector('#seg-type .seg-btn.active').dataset.v;
+  const m=document.getElementById('memo').value.trim();
+  const e={date:dk(TODAY),field:f,type:t,memo:m};
+  logs.unshift(e); logs=logs.slice(0,20);
+  localStorage.setItem(KL,JSON.stringify(logs));
+  dm[dk(TODAY)]=true;
+  localStorage.setItem(KD,JSON.stringify(dm));
+  document.getElementById('memo').value='';
+  rlog(); upd();
+  const allBtns=document.querySelectorAll('.db');
+  allBtns.forEach(b=>{
+    const dn=b.querySelector('.dn');
+    if(dn && dn.textContent==TODAY.getDate().toString() && !b.disabled && !b.classList.contains('exam')){
+      b.className='db done';
+      b.innerHTML=`<span class="dn">${TODAY.getDate()}</span><span class="di">✓</span><span class="dp" style="color:var(--green)">${ph(TODAY).label}</span>`;
+    }
+  });
+  showToast('記録しました！今日もよく頑張りました ✓');
+}
+
+function rlog(){
+  const h=document.getElementById('hist');
+  if(!logs.length){ h.innerHTML='<div class="hist-empty">まだ記録がありません</div>'; return; }
+  h.innerHTML=logs.slice(0,5).map(e=>`
+    <div class="he">
+      <div class="he-dot"></div>
+      <div class="he-main">
+        <div class="he-date">${e.date}</div>
+        <div class="he-tag">${e.field} ・ ${e.type}</div>
+        ${e.memo?`<div class="he-memo">${e.memo}</div>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+build(); upd(); rlog();
+</script>
+</body>
+</html>
